@@ -22,13 +22,10 @@
 document.getElementById("stage1Form").addEventListener("submit", function(e) {
   e.preventDefault();
 
-  // Generate random CSRF token
   function generateCSRF(length = 20) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let token = '';
-    for (let i = 0; i < length; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    for (let i = 0; i < length; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
     return token;
   }
 
@@ -43,19 +40,23 @@ document.getElementById("stage1Form").addEventListener("submit", function(e) {
 
   console.log("Stage 1 Payload:", payload);
 
-  // Example: Send to your Stage 1 webhook in n8n
   fetch("https://musashiro17.app.n8n.cloud/webhook-test/provision/stage1", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   })
   .then(response => response.json())
-  .then(data => alert("Submission received!"))
-  .catch(err => alert("Error submitting form"));
+  .then(data => {
+    console.log("Stage 1 Response:", data);
+    // Redirect to Stage 2 with URL-encoded JSON
+    const encoded = encodeURIComponent(JSON.stringify(data[0] || data));
+    window.location.href = `stage2.html?data=${encoded}`;
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error submitting form");
+  });
 });
 </script>
 </body>
 </html>
-
