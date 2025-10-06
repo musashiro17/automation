@@ -1,77 +1,76 @@
 <!DOCTYPE html>
 <html>
 <body>
-<h2>Stage 2 – Approval & Confirmation</h2>
+<h2>Stage 2 Review & Approval</h2>
 <form id="stage2Form">
-  <label for="upn">UPN:</label><br>
-  <input type="text" id="upn" name="upn" readonly><br><br>
-
-  <label for="samAccountName">SAM Account Name:</label><br>
-  <input type="text" id="samAccountName" name="samAccountName"><br><br>
-
-  <label for="department">Department:</label><br>
-  <input type="text" id="department" name="department"><br><br>
-
-  <label for="location">Location:</label><br>
-  <input type="text" id="location" name="location"><br><br>
+  <label for="proposedAlias">Proposed Alias:</label><br>
+  <input type="text" id="proposedAlias" name="proposedAlias" required><br><br>
 
   <label for="managerEmail">Manager Email:</label><br>
-  <input type="email" id="managerEmail" name="managerEmail"><br><br>
+  <input type="email" id="managerEmail" name="managerEmail" required><br><br>
 
-  <label for="approval">Approval:</label><br>
-  <select id="approval" name="approval">
-    <option value="Approved">Approved</option>
-    <option value="Rejected">Rejected</option>
-  </select><br><br>
+  <label for="department">Department:</label><br>
+  <input type="text" id="department" name="department" required><br><br>
 
+  <label for="location">Location:</label><br>
+  <input type="text" id="location" name="location" required><br><br>
+
+  <!-- Hidden fields -->
   <input type="hidden" id="csrf" name="csrf">
+  <input type="hidden" id="upn" name="upn">
+  <input type="hidden" id="samAccountName" name="samAccountName">
+  <input type="hidden" id="ouDn" name="ouDn">
+  <input type="hidden" id="baseGroups" name="baseGroups">
+  <input type="hidden" id="licenses" name="licenses">
+
   <input type="submit" value="Submit Stage 2">
 </form>
 
 <script>
-(function prefill(){
+// Stage 2 prefill from URL query parameters
+function prefillForm() {
   const params = new URLSearchParams(window.location.search);
-  const raw = params.get("data");
-  if (!raw) return alert("Missing Stage 1 data!");
-  const data = JSON.parse(decodeURIComponent(raw));
+  
+  document.getElementById("proposedAlias").value = params.get("proposedAlias") || "";
+  document.getElementById("managerEmail").value = params.get("managerEmail") || "";
+  document.getElementById("department").value = params.get("department") || "";
+  document.getElementById("location").value = params.get("location") || "";
+  document.getElementById("csrf").value = params.get("csrf") || "";
+  document.getElementById("upn").value = params.get("upn") || "";
+  document.getElementById("samAccountName").value = params.get("samAccountName") || "";
+  document.getElementById("ouDn").value = params.get("ouDn") || "";
+  document.getElementById("baseGroups").value = params.get("baseGroups") || "";
+  document.getElementById("licenses").value = params.get("licenses") || "";
+}
 
-  document.getElementById("upn").value = data.upn || "";
-  document.getElementById("samAccountName").value = data.samAccountName || "";
-  document.getElementById("department").value = data.department || "";
-  document.getElementById("location").value = data.location || "";
-  document.getElementById("managerEmail").value = data.managerEmail || "";
-  document.getElementById("csrf").value = data.csrf || "";
-})();
+prefillForm();
 
-document.getElementById("stage2Form").addEventListener("submit", async function(e) {
+document.getElementById("stage2Form").addEventListener("submit", function(e){
   e.preventDefault();
-
+  
   const payload = {
-    upn: document.getElementById("upn").value,
-    samAccountName: document.getElementById("samAccountName").value,
+    proposedAlias: document.getElementById("proposedAlias").value,
+    managerEmail: document.getElementById("managerEmail").value,
     department: document.getElementById("department").value,
     location: document.getElementById("location").value,
-    managerEmail: document.getElementById("managerEmail").value,
-    approval: document.getElementById("approval").value,
-    csrf: document.getElementById("csrf").value
+    csrf: document.getElementById("csrf").value,
+    upn: document.getElementById("upn").value,
+    samAccountName: document.getElementById("samAccountName").value,
+    ouDn: document.getElementById("ouDn").value,
+    baseGroups: document.getElementById("baseGroups").value,
+    licenses: document.getElementById("licenses").value
   };
-
+  
   console.log("Stage 2 Payload:", payload);
-  alert("Submitting Stage 2…");
 
-  try {
-    const res = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage2", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) throw new Error("Stage 2 webhook returned error " + res.status);
-    alert("Stage 2 submission successful!");
-  } catch (err) {
-    console.error(err);
-    alert("Error submitting Stage 2: " + err.message);
-  }
+  fetch("https://musashiro17.app.n8n.cloud/webhook-test/provision/stage2", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  })
+  .then(resp => resp.json())
+  .then(data => alert("Stage 2 submitted successfully!"))
+  .catch(err => alert("Error submitting Stage 2"));
 });
 </script>
 </body>
