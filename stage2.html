@@ -1,20 +1,68 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stage 2 - Review & Approval</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0 15px 0;
+      box-sizing: border-box;
+    }
+    input[type="submit"] {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    input[type="submit"]:hover {
+      background-color: #45a049;
+    }
+    .readonly {
+      background-color: #f0f0f0;
+    }
+    .info-section {
+      background-color: #e7f3ff;
+      padding: 10px;
+      margin: 20px 0;
+      border-left: 4px solid #2196F3;
+    }
+  </style>
+</head>
 <body>
-<h2>Stage 2 Review & Approval</h2>
+<h2>Stage 2 - Review & Approval</h2>
+
+<div class="info-section" id="suggestedInfo" style="display:none;">
+  <h3>Suggested Values from AD:</h3>
+  <p><strong>UPN:</strong> <span id="displayUpn"></span></p>
+  <p><strong>SAM Account:</strong> <span id="displaySam"></span></p>
+  <p><strong>OU:</strong> <span id="displayOu"></span></p>
+  <p><strong>Groups:</strong> <span id="displayGroups"></span></p>
+</div>
+
 <form id="stage2Form">
   <label for="proposedAlias">Proposed Alias:</label><br>
-  <input type="text" id="proposedAlias" name="proposedAlias" required><br><br>
-
+  <input type="text" id="proposedAlias" name="proposedAlias" required><br>
+  
   <label for="managerEmail">Manager Email:</label><br>
-  <input type="email" id="managerEmail" name="managerEmail" required><br><br>
-
+  <input type="email" id="managerEmail" name="managerEmail" required><br>
+  
   <label for="department">Department:</label><br>
-  <input type="text" id="department" name="department" required><br><br>
-
+  <input type="text" id="department" name="department" required><br>
+  
   <label for="location">Location:</label><br>
-  <input type="text" id="location" name="location" required><br><br>
-
+  <input type="text" id="location" name="location" required><br>
+  
   <!-- Hidden fields -->
   <input type="hidden" id="csrf" name="csrf">
   <input type="hidden" id="upn" name="upn">
@@ -22,31 +70,84 @@
   <input type="hidden" id="ouDn" name="ouDn">
   <input type="hidden" id="baseGroups" name="baseGroups">
   <input type="hidden" id="licenses" name="licenses">
-
+  
   <input type="submit" value="Submit Stage 2">
 </form>
 
 <script>
-// Stage 2 prefill from URL query parameters
 function prefillForm() {
   const params = new URLSearchParams(window.location.search);
+  const dataParam = params.get("data");
   
-  document.getElementById("proposedAlias").value = params.get("proposedAlias") || "";
-  document.getElementById("managerEmail").value = params.get("managerEmail") || "";
-  document.getElementById("department").value = params.get("department") || "";
-  document.getElementById("location").value = params.get("location") || "";
-  document.getElementById("csrf").value = params.get("csrf") || "";
-  document.getElementById("upn").value = params.get("upn") || "";
-  document.getElementById("samAccountName").value = params.get("samAccountName") || "";
-  document.getElementById("ouDn").value = params.get("ouDn") || "";
-  document.getElementById("baseGroups").value = params.get("baseGroups") || "";
-  document.getElementById("licenses").value = params.get("licenses") || "";
+  if (!dataParam) {
+    console.error("No data parameter found in URL");
+    alert("No data received from Stage 1. Please go back and submit Stage 1 first.");
+    return;
+  }
+  
+  try {
+    // Parse the JSON object from URL
+    const data = JSON.parse(decodeURIComponent(dataParam));
+    console.log("Received data from Stage 1:", data);
+    
+    // Fill visible fields (original inputs from Stage 1)
+    document.getElementById("proposedAlias").value = data.proposedAlias || "";
+    document.getElementById("managerEmail").value = data.managerEmail || "";
+    document.getElementById("department").value = data.department || "";
+    document.getElementById("location").value = data.location || "";
+    
+    // Fill hidden fields from suggested data (returned by n8n/AD lookup)
+    document.getElementById("csrf").value = data.csrf || "";
+    document.getElementById("upn").value = data.suggested?.upn || "";
+    document.getElementById("samAccountName").value = data.suggested?.samAccountName || "";
+    document.getElementById("ouDn").value = data.suggested?.ouDn || "";
+    
+    // Handle arrays (baseGroups, licenses)
+    if (data.suggested?.baseGroups) {
+      document.getElementById("baseGroups").value = JSON.stringify(data.suggested.baseGroups);
+    }
+    if (data.licenses) {
+      document.getElementById("licenses").value = JSON.stringify(data.licenses);
+    }
+    
+    // Display suggested info
+    if (data.suggested) {
+      document.getElementById("displayUpn").textContent = data.suggested.upn || "N/A";
+      document.getElementById("displaySam").textContent = data.suggested.samAccountName || "N/A";
+      document.getElementById("displayOu").textContent = data.suggested.ouDn || "N/A";
+      document.getElementById("displayGroups").textContent = data.suggested.baseGroups?.join(", ") || "N/A";
+      document.getElementById("suggestedInfo").style.display = "block";
+    }
+  } catch (err) {
+    console.error("Error parsing data:", err);
+    alert("Error loading Stage 1 data: " + err.message);
+  }
 }
 
+// Run prefill on page load
 prefillForm();
 
-document.getElementById("stage2Form").addEventListener("submit", function(e){
+// Handle Stage 2 form submission
+document.getElementById("stage2Form").addEventListener("submit", async function(e) {
   e.preventDefault();
+  
+  // Parse baseGroups and licenses back to arrays
+  let baseGroups = [];
+  let licenses = [];
+  
+  try {
+    const baseGroupsVal = document.getElementById("baseGroups").value;
+    if (baseGroupsVal) baseGroups = JSON.parse(baseGroupsVal);
+  } catch (e) {
+    console.error("Error parsing baseGroups:", e);
+  }
+  
+  try {
+    const licensesVal = document.getElementById("licenses").value;
+    if (licensesVal) licenses = JSON.parse(licensesVal);
+  } catch (e) {
+    console.error("Error parsing licenses:", e);
+  }
   
   const payload = {
     proposedAlias: document.getElementById("proposedAlias").value,
@@ -57,20 +158,31 @@ document.getElementById("stage2Form").addEventListener("submit", function(e){
     upn: document.getElementById("upn").value,
     samAccountName: document.getElementById("samAccountName").value,
     ouDn: document.getElementById("ouDn").value,
-    baseGroups: document.getElementById("baseGroups").value,
-    licenses: document.getElementById("licenses").value
+    baseGroups: baseGroups,
+    licenses: licenses
   };
   
   console.log("Stage 2 Payload:", payload);
-
-  fetch("https://musashiro17.app.n8n.cloud/webhook-test/provision/stage2", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(payload)
-  })
-  .then(resp => resp.json())
-  .then(data => alert("Stage 2 submitted successfully!"))
-  .catch(err => alert("Error submitting Stage 2"));
+  
+  try {
+    const resp = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage2", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    
+    if (!resp.ok) throw new Error("Stage 2 webhook returned error " + resp.status);
+    
+    const data = await resp.json();
+    console.log("Stage 2 Response:", data);
+    alert("Stage 2 submitted successfully! User provisioning initiated.");
+    
+    // Optionally redirect to success page or clear form
+    // window.location.href = "success.html";
+  } catch (err) {
+    console.error("Error submitting Stage 2:", err);
+    alert("Error submitting Stage 2: " + err.message);
+  }
 });
 </script>
 </body>
