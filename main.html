@@ -19,9 +19,10 @@
 </form>
 
 <script>
-document.getElementById("stage1Form").addEventListener("submit", function(e) {
+document.getElementById("stage1Form").addEventListener("submit", async function(e) {
   e.preventDefault();
 
+  // Generate random CSRF token
   function generateCSRF(length = 20) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let token = '';
@@ -39,23 +40,31 @@ document.getElementById("stage1Form").addEventListener("submit", function(e) {
   };
 
   console.log("Stage 1 Payload:", payload);
+  alert("Submitting Stage 1… please wait.");
 
-  fetch("https://musashiro17.app.n8n.cloud/webhook-test/provision/stage1", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log("Stage 1 Response:", data);
-    // Redirect to Stage 2 with URL-encoded JSON
-    const encoded = encodeURIComponent(JSON.stringify(data[0] || data));
+  try {
+    // Send payload to Stage 1 webhook
+    const res = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage1", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error("Stage 1 webhook returned error " + res.status);
+    const data = await res.json();
+    console.log("Stage 1 Completed:", data);
+
+    // If n8n returned an array (like [ { json... } ]), flatten it
+    const result = Array.isArray(data) ? (data[0].json || data[0]) : data;
+
+    // Redirect to Stage 2 with encoded data
+    const encoded = encodeURIComponent(JSON.stringify(result));
     window.location.href = `stage2.html?data=${encoded}`;
-  })
-  .catch(err => {
+
+  } catch (err) {
     console.error(err);
-    alert("Error submitting form");
-  });
+    alert("Error submitting Stage 1: " + err.message);
+  }
 });
 </script>
 </body>
