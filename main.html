@@ -44,7 +44,7 @@ document.getElementById("stage1Form").addEventListener("submit", async function(
 
   try {
     // Send payload to Stage 1 webhook
-    const res = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage1", {
+    const res = await fetch("https://musashiro17.app.n8n.cloud/webhook-test/provision/stage1", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload)
@@ -69,3 +69,4 @@ document.getElementById("stage1Form").addEventListener("submit", async function(
 </script>
 </body>
 </html>
+
