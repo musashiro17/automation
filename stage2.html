@@ -23,54 +23,18 @@
 </form>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  // Load Stage 1 data from localStorage
-  const stage1Data = JSON.parse(localStorage.getItem("stage1Data") || '{}');
-
-  // Prefill form fields
-  if(stage1Data.proposedAlias) document.getElementById("proposedAlias").value = stage1Data.proposedAlias;
-  if(stage1Data.managerEmail) document.getElementById("managerEmail").value = stage1Data.managerEmail;
-  if(stage1Data.department) document.getElementById("department").value = stage1Data.department;
-  if(stage1Data.location) document.getElementById("location").value = stage1Data.location;
-  if(stage1Data.hp !== undefined) document.getElementById("hp").value = stage1Data.hp;
-
-  // CSRF token: reuse from Stage 1 or generate new
-  document.getElementById("csrf").value = stage1Data.csrf || (function generateCSRF(length = 20) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
-    for (let i = 0; i < length; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return token;
-  })();
-});
-
-document.getElementById("stage2Form").addEventListener("submit", function(e) {
-  e.preventDefault();
-
-  const payload = {
-    csrf: document.getElementById("csrf").value,
-    hp: document.getElementById("hp").value,
-    proposedAlias: document.getElementById("proposedAlias").value,
-    managerEmail: document.getElementById("managerEmail").value,
-    department: document.getElementById("department").value,
-    location: document.getElementById("location").value
-  };
-
-  console.log("Stage 2 Payload:", payload);
-
-  // Send to Stage 2 webhook in n8n
-  fetch("https://musashiro17.app.n8n.cloud/webhook-test/provision-user/stage2", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(payload)
-  })
-  .then(response => response.json())
-  .then(data => alert("Stage 2 Submission received!"))
-   // <-- CLEAR STAGE 1 DATA HERE -->
-    localStorage.removeItem("stage1Data");
-  .catch(err => alert("Error submitting Stage 2 form"));
-});
+<script>
+const params = new URLSearchParams(window.location.search);
+const raw = params.get("data");
+if (raw) {
+  const data = JSON.parse(decodeURIComponent(raw));
+  document.getElementById("upn").value = data.upn || "";
+  document.getElementById("samAccountName").value = data.samAccountName || "";
+  document.getElementById("department").value = data.department || "";
+  document.getElementById("location").value = data.location || "";
+  document.getElementById("managerEmail").value = data.managerEmail || "";
+}
 </script>
 </body>
 </html>
+
