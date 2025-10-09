@@ -19,7 +19,7 @@
 </form>
 
 <script>
-document.getElementById("stage1Form").addEventListener("submit", function(e) {
+document.getElementById("stage1Form").addEventListener("submit", async function(e) {
   e.preventDefault();
 
   function generateCSRF(length = 20) {
@@ -38,22 +38,28 @@ document.getElementById("stage1Form").addEventListener("submit", function(e) {
     location: document.getElementById("location").value
   };
 
-  console.log("Stage 1 Payload:", payload);
+  try {
+    const res = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-  // Send Stage 1 payload asynchronously
-  fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage1", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  }).catch(err => console.error("Stage 1 webhook error:", err));
+    if (!res.ok) throw new Error("Stage 1 webhook returned error " + res.status);
+    const data = await res.json();
 
-  // Redirect immediately to Stage 2 with prefill
-  const encoded = encodeURIComponent(JSON.stringify(payload));
-  window.location.href = `stage2.html?data=${encoded}`;
+    // Redirect to Stage 2 with prefilled data from n8n (including suggested fields)
+    const encoded = encodeURIComponent(JSON.stringify(data));
+    window.location.href = `stage2.html?data=${encoded}`;
+
+  } catch (err) {
+    console.error("Error submitting Stage 1:", err);
+    alert("Error submitting Stage 1: " + err.message);
+  }
 });
-</script>
 </body>
 </html>
+
 
 
 
