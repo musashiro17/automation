@@ -1,72 +1,236 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stage 1 - New User Request</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    input[type="submit"] {
+      background-color: #2196F3;
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 4px;
+      width: 100%;
+    }
+    input[type="submit"]:hover {
+      background-color: #0b7dda;
+    }
+    .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: -10px;
+      margin-bottom: 15px;
+    }
+    .error {
+      color: #d32f2f;
+      font-size: 14px;
+      margin-top: -10px;
+      margin-bottom: 15px;
+      display: none;
+    }
+  </style>
+</head>
 <body>
-<h2>Stage 1 User Submission</h2>
-<form id="stage1Form">
-  <label for="proposedAlias">Proposed Alias:</label><br>
-  <input type="text" id="proposedAlias" name="proposedAlias" required><br><br>
-
-  <label for="managerEmail">Manager Email:</label><br>
-  <input type="email" id="managerEmail" name="managerEmail" required><br><br>
-
-  <label for="department">Department:</label><br>
-  <input type="text" id="department" name="department" required><br><br>
-
-  <label for="location">Location:</label><br>
-  <input type="text" id="location" name="location" required><br><br>
-
-  <input type="submit" value="Submit">
-</form>
+<div class="container">
+  <h2>Stage 1 - New User Submission</h2>
+  <p>Fill out the basic information to begin user provisioning.</p>
+  
+  <form id="stage1Form">
+    <label for="proposedAlias">Proposed Alias: *</label>
+    <input 
+      type="text" 
+      id="proposedAlias" 
+      name="proposedAlias" 
+      pattern="^[a-z0-9._-]{3,32}$"
+      minlength="3"
+      maxlength="32"
+      required
+      placeholder="e.g., john.doe or jdoe">
+    <div class="help-text">3-32 characters: lowercase letters, numbers, dots, dashes, underscores</div>
+    <div class="error" id="aliasError"></div>
+    
+    <label for="department">Department: *</label>
+    <input 
+      type="text" 
+      id="department" 
+      name="department" 
+      maxlength="64"
+      required
+      placeholder="e.g., IT, Finance, Sales">
+    
+    <label for="managerEmail">Manager Email: *</label>
+    <input 
+      type="email" 
+      id="managerEmail" 
+      name="managerEmail" 
+      maxlength="128"
+      required
+      placeholder="manager@yourdomain.com">
+    
+    <label for="location">Location: *</label>
+    <input 
+      type="text" 
+      id="location" 
+      name="location" 
+      maxlength="64"
+      required
+      placeholder="e.g., Head Office, Remote">
+    
+    <!-- Honeypot field (hidden from users, must remain empty) -->
+    <input 
+      type="text" 
+      id="hp" 
+      name="hp" 
+      style="display:none;"
+      tabindex="-1"
+      autocomplete="off">
+    
+    <input type="submit" value="Submit Stage 1">
+  </form>
+</div>
 
 <script>
 document.getElementById("stage1Form").addEventListener("submit", async function(e) {
   e.preventDefault();
-
-  // Generate random CSRF token
-  function generateCSRF(length = 20) {
+  
+  // Generate CSRF token (20-200 characters as per blueprint)
+  function generateCSRF(length = 32) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let token = '';
-    for (let i = 0; i < length; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < length; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
     return token;
   }
-
+  
+  // Get form values
+  const proposedAlias = document.getElementById("proposedAlias").value.toLowerCase();
+  const department = document.getElementById("department").value;
+  const managerEmail = document.getElementById("managerEmail").value;
+  const location = document.getElementById("location").value;
+  const hp = document.getElementById("hp").value;
+  
+  // Client-side validation (blueprint pattern)
+  const aliasPattern = /^[a-z0-9._-]{3,32}$/;
+  if (!aliasPattern.test(proposedAlias)) {
+    document.getElementById("aliasError").textContent = 
+      "Invalid alias format. Use only lowercase letters, numbers, dots, dashes, underscores (3-32 chars)";
+    document.getElementById("aliasError").style.display = "block";
+    return;
+  } else {
+    document.getElementById("aliasError").style.display = "none";
+  }
+  
+  // Check honeypot (must be empty)
+  if (hp !== "") {
+    console.error("Honeypot triggered - possible bot submission");
+    alert("Invalid submission detected.");
+    return;
+  }
+  
+  // Build payload matching blueprint schema
   const payload = {
+    proposedAlias: proposedAlias,
+    department: department,
+    managerEmail: managerEmail,
+    location: location,
     csrf: generateCSRF(),
-    hp: "",
-    proposedAlias: document.getElementById("proposedAlias").value,
-    managerEmail: document.getElementById("managerEmail").value,
-    department: document.getElementById("department").value,
-    location: document.getElementById("location").value
+    hp: hp
   };
-
-  console.log("Stage 1 Payload:", payload);
-  alert("Submitting Stage 1… please wait.");
-
+  
+  console.log("📤 Stage 1 Payload:", payload);
+  
+  // Disable submit button during request
+  const submitBtn = e.target.querySelector('input[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.value = "Submitting...";
+  
   try {
-    // Send payload to Stage 1 webhook
+    // Send to n8n Stage 1 webhook
     const res = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage1", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload)
     });
-
-    if (!res.ok) throw new Error("Stage 1 webhook returned error " + res.status);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Stage 1 webhook returned error ${res.status}: ${errorText}`);
+    }
+    
     const data = await res.json();
-    console.log("Stage 1 Completed:", data);
-
-    // If n8n returned an array (like [ { json... } ]), flatten it
-    const result = Array.isArray(data) ? (data[0].json || data[0]) : data;
-
-    // Redirect to Stage 2 with encoded data
-    const encoded = encodeURIComponent(JSON.stringify(result));
+    console.log("✓ Stage 1 Completed:", data);
+    
+    // Handle different response formats from n8n
+    // n8n might return: {json: {...}} or [{json: {...}}] or {...}
+    let result = data;
+    if (Array.isArray(data)) {
+      result = data[0].json || data[0];
+    } else if (data.json) {
+      result = data.json;
+    }
+    
+    // Merge original input with response
+    const fullData = {
+      ...payload,
+      ...result
+    };
+    
+    console.log("📦 Full data for Stage 2:", fullData);
+    
+    // Redirect to Stage 2 with all data
+    const encoded = encodeURIComponent(JSON.stringify(fullData));
     window.location.href = `stage2.html?data=${encoded}`;
-
+    
   } catch (err) {
-    console.error(err);
-    alert("Error submitting Stage 1: " + err.message);
+    console.error("❌ Error submitting Stage 1:", err);
+    alert("Error submitting Stage 1:\n\n" + err.message);
+    
+    // Re-enable submit button
+    submitBtn.disabled = false;
+    submitBtn.value = "Submit Stage 1";
   }
+});
+
+// Normalize alias to lowercase on blur
+document.getElementById("proposedAlias").addEventListener("blur", function() {
+  this.value = this.value.toLowerCase();
 });
 </script>
 </body>
 </html>
-
