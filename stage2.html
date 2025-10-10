@@ -1,187 +1,194 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stage 2 - Review & Approval</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-    }
-    input[type="text"], input[type="email"] {
-      width: 100%;
-      padding: 8px;
-      margin: 5px 0 15px 0;
-      box-sizing: border-box;
-    }
-    input[type="submit"] {
-      background-color: #4CAF50;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    input[type="submit"]:hover {
-      background-color: #45a049;
-    }
-    .readonly {
-      background-color: #f0f0f0;
-    }
-    .info-section {
-      background-color: #e7f3ff;
-      padding: 10px;
-      margin: 20px 0;
-      border-left: 4px solid #2196F3;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stage 2 - User Details</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  max-width: 700px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+.container {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+input[type="text"], input[type="email"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+input[type="submit"] {
+  background-color: #2196F3;
+  color: white;
+  padding: 12px 30px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+  width: 100%;
+}
+input[type="submit"]:hover {
+  background-color: #0b7dda;
+}
+.help-text {
+  font-size: 12px;
+  color: #666;
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+.error {
+  color: #d32f2f;
+  font-size: 14px;
+  margin-top: -10px;
+  margin-bottom: 15px;
+  display: none;
+}
+</style>
 </head>
 <body>
-<h2>Stage 2 - Review & Approval</h2>
+<div class="container">
+  <h2>Stage 2 - User Details</h2>
+  <p>Complete the remaining information for user provisioning.</p>
 
-<div class="info-section" id="suggestedInfo" style="display:none;">
-  <h3>Suggested Values from AD:</h3>
-  <p><strong>UPN:</strong> <span id="displayUpn"></span></p>
-  <p><strong>SAM Account:</strong> <span id="displaySam"></span></p>
-  <p><strong>OU:</strong> <span id="displayOu"></span></p>
-  <p><strong>Groups:</strong> <span id="displayGroups"></span></p>
+  <form id="stage2Form">
+    <label for="givenName">Given Name: *</label>
+    <input type="text" id="givenName" name="givenName" required placeholder="First Name">
+    
+    <label for="surname">Surname: *</label>
+    <input type="text" id="surname" name="surname" required placeholder="Last Name">
+    
+    <label for="displayName">Display Name: *</label>
+    <input type="text" id="displayName" name="displayName" required placeholder="e.g., John Doe">
+    
+    <label for="upn">UPN (Email): *</label>
+    <input type="email" id="upn" name="upn" required placeholder="e.g., john.doe@domain.com">
+    
+    <label for="samAccountName">SAM Account Name: *</label>
+    <input type="text" id="samAccountName" name="samAccountName" required placeholder="e.g., jdoe">
+    
+    <label for="ouDn">OU DN: *</label>
+    <input type="text" id="ouDn" name="ouDn" required placeholder="Organizational Unit DN">
+    
+    <label for="department">Department:</label>
+    <input type="text" id="department" name="department" maxlength="64">
+    
+    <label for="managerEmail">Manager Email:</label>
+    <input type="email" id="managerEmail" name="managerEmail" maxlength="128">
+    
+    <label for="location">Location:</label>
+    <input type="text" id="location" name="location" maxlength="64">
+    
+    <!-- Honeypot field -->
+    <input type="text" id="hp" name="hp" style="display:none;" tabindex="-1" autocomplete="off">
+    
+    <input type="submit" value="Submit Stage 2">
+  </form>
 </div>
 
-<form id="stage2Form">
-  <label for="proposedAlias">Proposed Alias:</label><br>
-  <input type="text" id="proposedAlias" name="proposedAlias" required><br>
-  
-  <label for="managerEmail">Manager Email:</label><br>
-  <input type="email" id="managerEmail" name="managerEmail" required><br>
-  
-  <label for="department">Department:</label><br>
-  <input type="text" id="department" name="department" required><br>
-  
-  <label for="location">Location:</label><br>
-  <input type="text" id="location" name="location" required><br>
-  
-  <!-- Hidden fields -->
-  <input type="hidden" id="csrf" name="csrf">
-  <input type="hidden" id="upn" name="upn">
-  <input type="hidden" id="samAccountName" name="samAccountName">
-  <input type="hidden" id="ouDn" name="ouDn">
-  <input type="hidden" id="baseGroups" name="baseGroups">
-  <input type="hidden" id="licenses" name="licenses">
-  
-  <input type="submit" value="Submit Stage 2">
-</form>
-
 <script>
-function prefillForm() {
+// Parse Stage 1 data from URL
+function getStage1Data() {
   const params = new URLSearchParams(window.location.search);
-  const dataParam = params.get("data");
-  
-  if (!dataParam) {
-    console.error("No data parameter found in URL");
-    alert("No data received from Stage 1. Please go back and submit Stage 1 first.");
-    return;
-  }
-  
+  if (!params.has("data")) return {};
   try {
-    // Parse the JSON object from URL
-    const data = JSON.parse(decodeURIComponent(dataParam));
-    console.log("Received data from Stage 1:", data);
-    
-    // Fill visible fields (original inputs from Stage 1)
-    document.getElementById("proposedAlias").value = data.proposedAlias || "";
-    document.getElementById("managerEmail").value = data.managerEmail || "";
-    document.getElementById("department").value = data.department || "";
-    document.getElementById("location").value = data.location || "";
-    
-    // Fill hidden fields from suggested data (returned by n8n/AD lookup)
-    document.getElementById("csrf").value = data.csrf || "";
-    document.getElementById("upn").value = data.suggested?.upn || "";
-    document.getElementById("samAccountName").value = data.suggested?.samAccountName || "";
-    document.getElementById("ouDn").value = data.suggested?.ouDn || "";
-    
-    // Handle arrays (baseGroups, licenses)
-    if (data.suggested?.baseGroups) {
-      document.getElementById("baseGroups").value = JSON.stringify(data.suggested.baseGroups);
-    }
-    if (data.licenses) {
-      document.getElementById("licenses").value = JSON.stringify(data.licenses);
-    }
-    
-    // Display suggested info
-    if (data.suggested) {
-      document.getElementById("displayUpn").textContent = data.suggested.upn || "N/A";
-      document.getElementById("displaySam").textContent = data.suggested.samAccountName || "N/A";
-      document.getElementById("displayOu").textContent = data.suggested.ouDn || "N/A";
-      document.getElementById("displayGroups").textContent = data.suggested.baseGroups?.join(", ") || "N/A";
-      document.getElementById("suggestedInfo").style.display = "block";
-    }
-  } catch (err) {
-    console.error("Error parsing data:", err);
-    alert("Error loading Stage 1 data: " + err.message);
+    return JSON.parse(decodeURIComponent(params.get("data")));
+  } catch {
+    return {};
   }
 }
 
-// Run prefill on page load
-prefillForm();
+// Generate CSRF token
+function generateCSRF(length = 32) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  for (let i = 0; i < length; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+// Prefill fields from Stage 1
+const stage1Data = getStage1Data();
+document.getElementById("department").value = stage1Data.department || '';
+document.getElementById("managerEmail").value = stage1Data.managerEmail || '';
+document.getElementById("location").value = stage1Data.location || '';
+const csrfToken = generateCSRF();
 
 // Handle Stage 2 form submission
-document.getElementById("stage2Form").addEventListener("submit", async function(e) {
+document.getElementById("stage2Form").addEventListener("submit", async function(e){
   e.preventDefault();
   
-  // Parse baseGroups and licenses back to arrays
-  let baseGroups = [];
-  let licenses = [];
-  
-  try {
-    const baseGroupsVal = document.getElementById("baseGroups").value;
-    if (baseGroupsVal) baseGroups = JSON.parse(baseGroupsVal);
-  } catch (e) {
-    console.error("Error parsing baseGroups:", e);
-  }
-  
-  try {
-    const licensesVal = document.getElementById("licenses").value;
-    if (licensesVal) licenses = JSON.parse(licensesVal);
-  } catch (e) {
-    console.error("Error parsing licenses:", e);
-  }
-  
   const payload = {
-    proposedAlias: document.getElementById("proposedAlias").value,
-    managerEmail: document.getElementById("managerEmail").value,
-    department: document.getElementById("department").value,
-    location: document.getElementById("location").value,
-    csrf: document.getElementById("csrf").value,
-    upn: document.getElementById("upn").value,
-    samAccountName: document.getElementById("samAccountName").value,
+    givenName: document.getElementById("givenName").value,
+    surname: document.getElementById("surname").value,
+    displayName: document.getElementById("displayName").value,
+    upn: document.getElementById("upn").value.toLowerCase(),
+    samAccountName: document.getElementById("samAccountName").value.toLowerCase(),
     ouDn: document.getElementById("ouDn").value,
-    baseGroups: baseGroups,
-    licenses: licenses
+    department: document.getElementById("department").value,
+    managerEmail: document.getElementById("managerEmail").value,
+    location: document.getElementById("location").value,
+    groups: [], // can be filled later
+    licenses: [],
+    permissions: {},
+    ddgNotLike: {},
+    approvalRequired: false,
+    csrf: csrfToken,
+    hp: document.getElementById("hp").value
   };
-  
-  console.log("Stage 2 Payload:", payload);
+
+  // Honeypot check
+  if(payload.hp !== "") {
+    console.error("Honeypot triggered - possible bot submission");
+    alert("Invalid submission detected.");
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('input[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.value = "Submitting...";
   
   try {
-    const resp = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage2", {
+    const res = await fetch("https://musashiro17.app.n8n.cloud/webhook/provision/stage2", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload)
     });
     
-    if (!resp.ok) throw new Error("Stage 2 webhook returned error " + resp.status);
+    if(!res.ok){
+      const errorText = await res.text();
+      throw new Error(`Stage 2 webhook error ${res.status}: ${errorText}`);
+    }
+
+    const data = await res.json();
+    console.log("✓ Stage 2 Completed:", data);
+    alert("Stage 2 submission successful!");
     
-    const data = await resp.json();
-    console.log("Stage 2 Response:", data);
-    alert("Stage 2 submitted successfully! User provisioning initiated.");
-    
-    // Optionally redirect to success page or clear form
-    // window.location.href = "success.html";
-  } catch (err) {
-    console.error("Error submitting Stage 2:", err);
-    alert("Error submitting Stage 2: " + err.message);
+  } catch(err){
+    console.error("❌ Error submitting Stage 2:", err);
+    alert("Error submitting Stage 2:\n\n" + err.message);
+    submitBtn.disabled = false;
+    submitBtn.value = "Submit Stage 2";
   }
 });
 </script>
